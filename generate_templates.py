@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 
-LOW = np.array([110, 0, 0])
+LOW = np.array([95, 0, 0])
 UPP = np.array([180, 255, 255])
 def hsv_filter(img):
 	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -10,8 +10,8 @@ def hsv_filter(img):
 	# filtered = cv2.bitwise_and(img, img, mask= msk)
 	return msk
       
-base_template_path = "images/cap1.jpg"
-output_dir = "images/template1"
+base_template_path = "images/cap2.jpg"
+output_dir = "images/template2"
 os.makedirs(output_dir, exist_ok=True)
 
 rotations = [0, 45, 90, 135, 180, 225, 270, 315]

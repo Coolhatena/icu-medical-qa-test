@@ -5,7 +5,9 @@ import numpy as np
 
 LOW = np.array([95, 0, 0])
 UPP = np.array([180, 255, 255])
-img_name = "img5.jpg"
+
+LOW_tag = np.array([115, 100, 0])
+UPP_tag = np.array([180, 255, 255])
 q_unicode = ord('q')
 
 template1_dir = "images/template1"
@@ -21,6 +23,12 @@ def hsv_filter(img):
 	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 	msk = cv2.inRange(hsv, LOW, UPP)
 	return msk
+
+
+def filter_tag(img):
+	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+	msk = cv2.inRange(hsv, LOW_tag, UPP_tag)
+	return msk	
 
 
 def detect_best_template(scene_mask, template_dir):
@@ -43,7 +51,6 @@ def detect_best_template(scene_mask, template_dir):
 			best_top_left = max_loc
 			best_w, best_h = template.shape[::-1]
 
-	print(f"Best val: {best_val}")
 	return {
 		"score": best_val,
 		"angle": best_angle,
@@ -53,16 +60,16 @@ def detect_best_template(scene_mask, template_dir):
 	} if best_val > matching_threshold else None
 
 
-while True:
-	img_scene_color = cv2.imread("images/" + img_name)
+images = ["img5", "img7", "img8", "img10", "img11"]
+
+for img_name in images:
+	img_scene_color = cv2.imread(f"images/{img_name}.jpg")
 	if img_scene_color is None:
 		break
 
-	print("###### Test init ######")	
 	img_scene_mask = hsv_filter(img_scene_color)
 	h_scene, w_scene = img_scene_mask.shape
 
-	# Paso 1: detectar template1 en toda la imagen
 	result1 = detect_best_template(img_scene_mask, template1_dir)
 
 	if result1:
@@ -72,23 +79,23 @@ while True:
 		cy1 = top_left1[1] + h1 // 2
 		region = "abajo" if cy1 < h_scene // 2 else "arriba"
 
-		# Dibujar template1
 		bottom_right1 = (top_left1[0] + w1, top_left1[1] + h1)
 		figure_center1 = (int(top_left1[0] + w1/2), int(top_left1[1] + h1/2))
-		cv2.rectangle(img_scene_color, top_left1, bottom_right1, (0, 255, 0), 2)
-		cv2.line(img_scene_color, figure_center1, rotarGrad(figure_center1[0], figure_center1[1], result1["angle"] + 90, 120), (0, 255, 0), 2)
-		cv2.putText(img_scene_color, f"T1 {result1['angle']}°", (top_left1[0], top_left1[1]-10),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-		# Paso 2: definir región de búsqueda para template2
 		if region == "abajo":
-			mask_region2 = img_scene_mask[h_scene // 2:, :]  # parte de abajo
+			mask_region2 = img_scene_mask[h_scene // 2:, :]  # Bottom side
 			offset_y = h_scene // 2
+			color = (0, 255, 0) if result1["angle"] not in [135, 180, 225, 270] else (0, 0, 255)
 		else:
-			mask_region2 = img_scene_mask[:h_scene // 2, :]  # parte de arriba
+			color = (0, 255, 0)
+			mask_region2 = img_scene_mask[:h_scene // 2, :]  # upper side
 			offset_y = 0
 
-		# Paso 3: detectar template2 en región correspondiente
+		cv2.rectangle(img_scene_color, top_left1, bottom_right1, color, 2)
+		cv2.line(img_scene_color, figure_center1, rotarGrad(figure_center1[0], figure_center1[1], result1["angle"] + 90, 120), color, 2)
+		cv2.putText(img_scene_color, f"T1 {result1['angle']}", (top_left1[0], top_left1[1]-10),
+					cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+		
 		result2 = detect_best_template(mask_region2, template2_dir)
 
 		if result2:
@@ -97,15 +104,23 @@ while True:
 
 			bottom_right2 = (top_left2[0] + w2, top_left2[1] + h2)
 			figure_center2 = (int(top_left2[0] + w2/2), int(top_left2[1] + h2/2))
-			cv2.rectangle(img_scene_color, top_left2, bottom_right2, (0, 0, 255), 2)
+			cv2.rectangle(img_scene_color, top_left2, bottom_right2, (0, 255, 0), 2)
 			cv2.line(img_scene_color, figure_center2, rotarGrad(figure_center2[0], figure_center2[1], result2["angle"] + 90, 120), (0, 255, 0), 2)
-			cv2.putText(img_scene_color, f"T2 {result2['angle']}°", (top_left2[0], top_left2[1]-10),
-						cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+			cv2.putText(img_scene_color, f"T2 {result2['angle']}", (top_left2[0], top_left2[1]-10),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+		
 
-	print("###### Test end ######\n\n\n\n\n\n\n")
-	cv2.imshow("Deteccion", img_scene_color)
-	cv2.imshow("mask", img_scene_mask)
-	if cv2.waitKey(1) == q_unicode:
+		tag_img = filter_tag(img_scene_color)
+		contornos, _ = cv2.findContours(tag_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+		if contornos:
+			contorno_max = max(contornos, key=cv2.contourArea)
+			x, y, w, h = cv2.boundingRect(contorno_max)
+			cv2.rectangle(img_scene_color, (x, y), (x + w, y + h), (0, 255, 0), 2)
+		
+	cv2.imshow("Deteccion",  cv2.resize(img_scene_color, (480, 640)))
+	# cv2.imshow("mask", img_scene_mask)
+	if cv2.waitKey(3500) == q_unicode:
 		break
 
 cv2.destroyAllWindows()
