@@ -2,7 +2,7 @@ import cv2
 import os
 import math
 import numpy as np
-
+// TODO: Setup on station with camera
 LOW = np.array([95, 0, 0])
 UPP = np.array([180, 255, 255])
 
@@ -118,9 +118,9 @@ for img_name in images:
 			x, y, w, h = cv2.boundingRect(contorno_max)
 			cv2.rectangle(img_scene_color, (x, y), (x + w, y + h), (0, 255, 0), 2)
 		
-	cv2.imshow("Deteccion",  cv2.resize(img_scene_color, (480, 640)))
+	cv2.imshow("Deteccion",  cv2.resize(img_scene_color, (720, 960)))
 	# cv2.imshow("mask", img_scene_mask)
-	if cv2.waitKey(3500) == q_unicode:
+	if cv2.waitKey(6000 if img_name == "img5" else 3000) == q_unicode:
 		break
 
 cv2.destroyAllWindows()
