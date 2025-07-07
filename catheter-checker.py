@@ -2,7 +2,7 @@ import cv2
 import os
 import math
 import numpy as np
-// TODO: Setup on station with camera
+# TODO: Setup on station with camera
 LOW = np.array([95, 0, 0])
 UPP = np.array([180, 255, 255])
 
