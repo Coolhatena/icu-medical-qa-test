@@ -10,6 +10,7 @@ LOW_tag = np.array([115, 100, 0])
 UPP_tag = np.array([180, 255, 255])
 q_unicode = ord('q')
 
+# Unify template routes
 template1_dir = "images/template1"
 template2_dir = "images/template2"
 rotations = [0, 45, 90, 135, 180, 225, 270, 315]
